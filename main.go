@@ -12,11 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-
-
-func main(){
-	err:=godotenv.Load(".env")
-	if err!=nil{
+func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
 		log.Fatal("Error loading the .env file")
 	}
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(string("mongodb://"+os.Getenv("MONGO_HOST")+":"+os.Getenv("MONGO_PORT"))))
@@ -29,7 +27,9 @@ func main(){
 		}
 	}()
 
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+
 	controller.RegisterMemberController(client)
 	controller.RegisterFrontController()
-	http.ListenAndServe(string(os.Getenv("SERVER")+":"+os.Getenv("SERVER_PORT")),nil)
+	http.ListenAndServe(string(os.Getenv("SERVER")+":"+os.Getenv("SERVER_PORT")), nil)
 }
