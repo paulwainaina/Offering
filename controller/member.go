@@ -26,7 +26,7 @@ type Member struct {
 type Members []Member
 
 var (
-	members  Members
+	members Members
 )
 
 const (
@@ -54,7 +54,7 @@ func (member MemberController) fetchData() {
 	if err != nil {
 		fmt.Println("fetchData error1 " + err.Error())
 	} else {
-		if err=result.All(context.TODO(),&members);err != nil {
+		if err = result.All(context.TODO(), &members); err != nil {
 			fmt.Println("fetchData error2 " + err.Error())
 		}
 	}
@@ -64,21 +64,21 @@ func (member MemberController) GetMembers() (Members, error) {
 	return members, nil
 }
 
-func (member MemberController) FindNextID()(uint64){
-	if len(members)==0{
+func (member MemberController) FindNextID() uint64 {
+	if len(members) == 0 {
 		return 1
-	} 
-	num:= []uint64{}
-	for _,x := range members{
-		num=append(num,x.ID)
-	}	
-	sort.Slice(num,func(a,b int)bool{return num[a]>num[b]})
-	for i:=0;i<len(num)-1;i++{
-        if num[i]>0 && num[i+1]!=num[i]+1 && num[i+1]!=num[i]{
-            return num[i]+1;
+	}
+	num := []uint64{}
+	for _, x := range members {
+		num = append(num, x.ID)
+	}
+	sort.Slice(num, func(a, b int) bool { return num[a] > num[b] })
+	for i := 0; i < len(num)-1; i++ {
+		if num[i] > 0 && num[i+1] != num[i]+1 && num[i+1] != num[i] {
+			return num[i] + 1
 		}
-    }
-    return num[len(num)-1]+1;
+	}
+	return num[len(num)-1] + 1
 }
 
 func (member MemberController) AddMember(m Member) (Member, error) {
