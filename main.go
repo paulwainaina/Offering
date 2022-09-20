@@ -31,5 +31,6 @@ func main() {
 
 	controller.RegisterMemberController(client)
 	controller.RegisterFrontController()
+	controller.RegisterUserController(client)
 	http.ListenAndServe(string(os.Getenv("SERVER")+":"+os.Getenv("SERVER_PORT")), nil)
 }

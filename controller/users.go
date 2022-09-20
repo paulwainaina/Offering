@@ -17,7 +17,7 @@ import (
 type UserType int
 
 const (
-	db1             = "offering"
+	db1            = "offering"
 	col1           = "users"
 	Admin UserType = iota
 	Normal
@@ -25,12 +25,12 @@ const (
 )
 
 type User struct {
-	ID       uint64
-	Name     string
-	Type     UserType
-	Password string
-	Email    string
-	Passport string
+	ID       uint64   `bson:"ID"`
+	Name     string   `bson:"Name"`
+	Type     UserType `bson:"Type"`
+	Password string   `bson:"Password"`
+	Email    string   `bson:"Email"`
+	Passport string   `bson:"Passport"`
 }
 
 type Users []User
@@ -44,19 +44,19 @@ func GetLoggedInUsers() Users {
 	return loggedInUsers
 }
 
-func AddLoggedInUsers(user User )(User,error){
-	loggedInUsers=append(loggedInUsers,user)
-	return user ,nil
+func AddLoggedInUsers(user User) (User, error) {
+	loggedInUsers = append(loggedInUsers, user)
+	return user, nil
 }
 
-func RemoveLoggedInUsers(id uint64)(error){
-	for i,user :=range loggedInUsers{
-		if user.ID==id {
-			loggedInUsers=append(loggedInUsers[:i],loggedInUsers[i+1:]...)
+func RemoveLoggedInUsers(id uint64) error {
+	for i, user := range loggedInUsers {
+		if user.ID == id {
+			loggedInUsers = append(loggedInUsers[:i], loggedInUsers[i+1:]...)
 			return nil
 		}
 	}
-	return fmt.Errorf("user ID %v not found ",id)
+	return fmt.Errorf("user ID %v not found ", id)
 }
 
 type UserController struct {
@@ -155,13 +155,46 @@ func (user UserController) RemoveUser(id uint64) (User, error) {
 	return User{}, fmt.Errorf("user ID %v not found", id)
 }
 
+func (user UserController) GetUserByDetail(u User) (User, error) {
+	for _, us := range systemUsers {
+		if us.Email == u.Email && us.Password == u.Password {
+			return us, nil
+		}
+	}
+	return User{}, fmt.Errorf("wrong User details")
+}
+
 func (user UserController) EncodeResponseAsJson(data interface{}, w io.Writer) {
 	enc := json.NewEncoder(w)
 	enc.Encode(data)
 }
 
+func (user UserController) parseRequest(r *http.Request) (User, error) {
+	data := json.NewDecoder(r.Body)
+	var u User
+	err := data.Decode(&u)
+	if err != nil {
+		return User{}, err
+	}
+	return u, nil
+}
+
 func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/user" {
+	if r.URL.Path == "/login" {
+		u, err := user.parseRequest(r)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Could not Parse User object"))
+			return
+		}
+		u, err = user.GetUserByDetail(u)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		user.EncodeResponseAsJson(u, w)
+	}else if r.URL.Path == "/user" {
 		switch r.Method {
 		case http.MethodGet:
 			{ //Get record of all the members
@@ -254,14 +287,15 @@ func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
 func NewUserController(mclient *mongo.Client) *UserController {
 
 	return &UserController{
-		UserPattern: regexp.MustCompile(`^/member/(\d+)/?`),
+		UserPattern: regexp.MustCompile(`^/user/(\d+)/?`),
 		client:      mclient,
 	}
 }
 
 func RegisterUserController(client *mongo.Client) {
-	membercontroller := NewUserController(client)
-	membercontroller.fetchData()
-	http.HandleFunc("/user", membercontroller.ServeHttp)
-	http.HandleFunc("/user/", membercontroller.ServeHttp)
+	usercontroller := NewUserController(client)
+	usercontroller.fetchData()
+	http.HandleFunc("/user", usercontroller.ServeHttp)
+	http.HandleFunc("/user/", usercontroller.ServeHttp)
+	http.HandleFunc("/login", usercontroller.ServeHttp)
 }
