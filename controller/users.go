@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 
+	"example.com/session"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -36,32 +37,13 @@ type User struct {
 type Users []User
 
 var (
-	systemUsers   = Users{}
-	loggedInUsers = Users{}
+	systemUsers = Users{}
 )
 
-func GetLoggedInUsers() Users {
-	return loggedInUsers
-}
-
-func AddLoggedInUsers(user User) (User, error) {
-	loggedInUsers = append(loggedInUsers, user)
-	return user, nil
-}
-
-func RemoveLoggedInUsers(id uint64) error {
-	for i, user := range loggedInUsers {
-		if user.ID == id {
-			loggedInUsers = append(loggedInUsers[:i], loggedInUsers[i+1:]...)
-			return nil
-		}
-	}
-	return fmt.Errorf("user ID %v not found ", id)
-}
-
 type UserController struct {
-	UserPattern *regexp.Regexp
-	client      *mongo.Client
+	UserPattern    *regexp.Regexp
+	client         *mongo.Client
+	sessionManager *session.SessionManager
 }
 
 func (user UserController) GetUsers() (Users, error) {
@@ -78,7 +60,7 @@ func (user UserController) FindUser(id uint64) (User, error) {
 }
 
 func (user UserController) fetchData() {
-	_col := *user.client.Database(db).Collection(coll)
+	_col := *user.client.Database(db1).Collection(col1)
 	result, err := _col.Find(context.TODO(), bson.M{})
 	if err != nil {
 		fmt.Println("fetchData error1 " + err.Error())
@@ -193,8 +175,10 @@ func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
+		var se =user.sessionManager.CreateSession(10000)
+		w.Header().Set("session",se.SessionID)
 		user.EncodeResponseAsJson(u, w)
-	}else if r.URL.Path == "/user" {
+	} else if r.URL.Path == "/user" {
 		switch r.Method {
 		case http.MethodGet:
 			{ //Get record of all the members
@@ -284,16 +268,17 @@ func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func NewUserController(mclient *mongo.Client) *UserController {
+func NewUserController(mclient *mongo.Client, s *session.SessionManager) *UserController {
 
 	return &UserController{
-		UserPattern: regexp.MustCompile(`^/user/(\d+)/?`),
-		client:      mclient,
+		UserPattern:    regexp.MustCompile(`^/user/(\d+)/?`),
+		client:         mclient,
+		sessionManager: s,
 	}
 }
 
-func RegisterUserController(client *mongo.Client) {
-	usercontroller := NewUserController(client)
+func RegisterUserController(client *mongo.Client, s *session.SessionManager) {
+	usercontroller := NewUserController(client, s)
 	usercontroller.fetchData()
 	http.HandleFunc("/user", usercontroller.ServeHttp)
 	http.HandleFunc("/user/", usercontroller.ServeHttp)

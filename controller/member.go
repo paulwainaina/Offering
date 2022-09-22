@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 
+	"example.com/session"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -35,8 +36,9 @@ const (
 )
 
 type MemberController struct {
-	MemberPattern *regexp.Regexp
-	client        *mongo.Client
+	MemberPattern  *regexp.Regexp
+	client         *mongo.Client
+	sessionManager *session.SessionManager
 }
 
 func (member MemberController) FindMember(id uint64) (Member, error) {
@@ -227,16 +229,17 @@ func (member MemberController) ServeHttp(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func NewMemberController(mclient *mongo.Client) *MemberController {
+func NewMemberController(mclient *mongo.Client, s *session.SessionManager) *MemberController {
 
 	return &MemberController{
-		MemberPattern: regexp.MustCompile(`^/member/(\d+)/?`),
-		client:        mclient,
+		MemberPattern:  regexp.MustCompile(`^/member/(\d+)/?`),
+		client:         mclient,
+		sessionManager: s,
 	}
 }
 
-func RegisterMemberController(client *mongo.Client) {
-	membercontroller := NewMemberController(client)
+func RegisterMemberController(client *mongo.Client, s *session.SessionManager) {
+	membercontroller := NewMemberController(client, s)
 	membercontroller.fetchData()
 	http.HandleFunc("/member", membercontroller.ServeHttp)
 	http.HandleFunc("/member/", membercontroller.ServeHttp)

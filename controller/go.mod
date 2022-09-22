@@ -3,8 +3,10 @@ module example.com/controller
 go 1.18
 
 require go.mongodb.org/mongo-driver v1.10.2
+replace example.com/session => ../session
 
 require (
+	example.com/session v0.0.0-00010101000000-000000000000
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect

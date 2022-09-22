@@ -10,7 +10,10 @@ import (
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"example.com/session"
 )
+
+var sessionManager =session.NewSessionManager()
 
 func main() {
 	err := godotenv.Load(".env")
@@ -29,8 +32,8 @@ func main() {
 
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
 
-	controller.RegisterMemberController(client)
-	controller.RegisterFrontController()
-	controller.RegisterUserController(client)
+	controller.RegisterMemberController(client,sessionManager)
+	controller.RegisterFrontController(sessionManager)
+	controller.RegisterUserController(client,sessionManager)
 	http.ListenAndServe(string(os.Getenv("SERVER")+":"+os.Getenv("SERVER_PORT")), nil)
 }
