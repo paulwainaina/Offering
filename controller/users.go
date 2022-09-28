@@ -175,7 +175,7 @@ func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		var se =user.sessionManager.CreateSession(10000)
+		var se =user.sessionManager.CreateSession(5000)
 		w.Header().Set("session",se.SessionID)
 		user.EncodeResponseAsJson(u, w)
 	} else if r.URL.Path == "/user" {
@@ -268,16 +268,16 @@ func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func NewUserController(mclient *mongo.Client, s *session.SessionManager) *UserController {
+func NewUserController(mclient *mongo.Client, s interface{}) *UserController {
 
 	return &UserController{
 		UserPattern:    regexp.MustCompile(`^/user/(\d+)/?`),
 		client:         mclient,
-		sessionManager: s,
+		sessionManager: s.(*session.SessionManager),
 	}
 }
 
-func RegisterUserController(client *mongo.Client, s *session.SessionManager) {
+func RegisterUserController(client *mongo.Client, s interface{}) {
 	usercontroller := NewUserController(client, s)
 	usercontroller.fetchData()
 	http.HandleFunc("/user", usercontroller.ServeHttp)

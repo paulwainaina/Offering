@@ -19,11 +19,13 @@ func NewSessionManager() *SessionManager {
 	return &SessionManager{}
 }
 
-func (session *SessionManager) CreateSession(duration int64) *Session {
-	return &Session{
+func (session *SessionManager) CreateSession(duration int64) Session {
+	var ses = Session{
 		SessionID: uuid.NewString(),
 		Expiry:    time.Now().Add(time.Second * time.Duration(duration)),
 	}
+	session.Sessions = append(session.Sessions, &ses)
+	return ses
 }
 
 func (session *SessionManager) SessionExist(sessionid string) bool {

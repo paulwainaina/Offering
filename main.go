@@ -7,15 +7,15 @@ import (
 	"os"
 
 	"example.com/controller"
+	"example.com/session"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"example.com/session"
 )
-
-var sessionManager =session.NewSessionManager()
-
-func main() {
+var sessionManager *session.SessionManager
+func main() {	
+	sessionManager=session.NewSessionManager()
+	go sessionManager.DeleteSession()
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading the .env file")
@@ -32,8 +32,8 @@ func main() {
 
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
 
-	controller.RegisterMemberController(client,sessionManager)
+	controller.RegisterMemberController(client, sessionManager)
 	controller.RegisterFrontController(sessionManager)
-	controller.RegisterUserController(client,sessionManager)
+	controller.RegisterUserController(client, sessionManager)
 	http.ListenAndServe(string(os.Getenv("SERVER")+":"+os.Getenv("SERVER_PORT")), nil)
 }

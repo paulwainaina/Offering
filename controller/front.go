@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"text/template"
@@ -26,9 +25,9 @@ type FrontController struct {
 	sessionManager *session.SessionManager
 }
 
-func NewFrontController(s *session.SessionManager) *FrontController {
+func NewFrontController(s interface{}) *FrontController {
 	return &FrontController{
-		sessionManager: s,
+		sessionManager: s.(*session.SessionManager),
 	}
 }
 
@@ -84,16 +83,15 @@ func (front FrontController) RenderTemplate(w http.ResponseWriter, file string, 
 	}
 }
 
-func (front FrontController) SignedInMiddleware(next http.Handler) http.Handler {
+func (front *FrontController) SignedInMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(front.sessionManager.Sessions)
 		val, err := r.Cookie("Session")
+		
 		if err != nil {
 			http.Redirect(w, r, "/signin", http.StatusMovedPermanently)
 			return
 		}
-		if !front.sessionManager.SessionExist(val.Value) {
-			
+		if !(*front).sessionManager.SessionExist(val.Value) {
 			http.Redirect(w, r, "/signin", http.StatusMovedPermanently)
 			return
 		}
@@ -101,7 +99,7 @@ func (front FrontController) SignedInMiddleware(next http.Handler) http.Handler 
 	})
 }
 
-func RegisterFrontController(s *session.SessionManager) {
+func RegisterFrontController(s interface{}) {
 	frontcontroller := NewFrontController(s)
 	http.Handle("/", frontcontroller.SignedInMiddleware(http.HandlerFunc(frontcontroller.ServeHttp)))
 	http.HandleFunc("/signin", frontcontroller.ServeHttp)

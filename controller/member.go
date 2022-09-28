@@ -229,16 +229,16 @@ func (member MemberController) ServeHttp(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func NewMemberController(mclient *mongo.Client, s *session.SessionManager) *MemberController {
+func NewMemberController(mclient *mongo.Client, s interface{}) *MemberController {
 
 	return &MemberController{
 		MemberPattern:  regexp.MustCompile(`^/member/(\d+)/?`),
 		client:         mclient,
-		sessionManager: s,
+		sessionManager: s.(*session.SessionManager),
 	}
 }
 
-func RegisterMemberController(client *mongo.Client, s *session.SessionManager) {
+func RegisterMemberController(client *mongo.Client, s interface{}) {
 	membercontroller := NewMemberController(client, s)
 	membercontroller.fetchData()
 	http.HandleFunc("/member", membercontroller.ServeHttp)
