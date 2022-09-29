@@ -1,12 +1,14 @@
 package session
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type Session struct {
+	UserID    uint64
 	SessionID string
 	Expiry    time.Time
 }
@@ -19,13 +21,22 @@ func NewSessionManager() *SessionManager {
 	return &SessionManager{}
 }
 
-func (session *SessionManager) CreateSession(duration int64) Session {
+func (session *SessionManager) CreateSession(user uint64, duration int64) Session {
 	var ses = Session{
 		SessionID: uuid.NewString(),
 		Expiry:    time.Now().Add(time.Second * time.Duration(duration)),
+		UserID:    user,
 	}
 	session.Sessions = append(session.Sessions, &ses)
 	return ses
+}
+func (session *SessionManager) UserSession(user uint64) (string, error) {
+	for _, s := range session.Sessions {
+		if s.UserID == user {
+			return s.SessionID, nil
+		}
+	}
+	return "", fmt.Errorf("no session for user %v", user)
 }
 
 func (session *SessionManager) SessionExist(sessionid string) bool {

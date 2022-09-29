@@ -175,8 +175,8 @@ func (user UserController) ServeHttp(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(err.Error()))
 			return
 		}
-		var se =user.sessionManager.CreateSession(5000)
-		w.Header().Set("session",se.SessionID)
+		var se =user.sessionManager.CreateSession(u.ID,5000)
+		w.Header().Set("Session",se.SessionID)
 		user.EncodeResponseAsJson(u, w)
 	} else if r.URL.Path == "/user" {
 		switch r.Method {
